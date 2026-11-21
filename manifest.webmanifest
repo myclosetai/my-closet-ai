@@ -1,0 +1,9 @@
+{
+  "name": "MY CLOSET AI",
+  "short_name": "My Closet",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fff8fb",
+  "theme_color": "#f4d8e4",
+  "description": "Tu armario virtual inteligente"
+}

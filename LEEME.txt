@@ -1,0 +1,21 @@
+MY CLOSET AI — primera versión
+
+CONTENIDO
+- index.html: aplicación web funcional.
+- manifest.webmanifest y sw.js: soporte básico PWA.
+
+FUNCIONES QUE YA FUNCIONAN
+- Agregar prendas y accesorios con nombre, categoría, color y foto.
+- Guardar la colección localmente en el navegador del dispositivo.
+- Filtrar y eliminar prendas.
+- Recibir combinaciones sencillas a partir de tu armario.
+- Seleccionar prendas y preparar un conjunto.
+
+IMPORTANTE
+Esta entrega NO es un APK nativo y todavía NO incluye generación de prueba virtual con IA.
+Para instalarla como PWA en Android:
+1. Publica estos archivos en un hosting HTTPS.
+2. Abre la dirección en Chrome en Android.
+3. Menú ⋮ > Instalar aplicación (o Añadir a pantalla principal).
+
+La generación real de imágenes requiere integrar un proveedor de virtual try-on, un backend seguro y consentimiento explícito para procesar fotografías. No incluyas claves API secretas en el HTML.

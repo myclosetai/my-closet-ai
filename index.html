@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4d8e4">
+<meta name="description" content="Tu armario virtual inteligente">
+<link rel="manifest" href="manifest.webmanifest">
+<title>MY CLOSET AI</title>
+<style>
+:root{--pink:#f4d8e4;--pink2:#fbeaf0;--deep:#874663;--ink:#533746;--muted:#987b89;--white:#fff;--line:#f0dce5}
+*{box-sizing:border-box}body{margin:0;background:#fff8fb;color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:24px 18px 18px;background:linear-gradient(145deg,#f4d8e4,#fff0f5);border-radius:0 0 26px 26px;text-align:center}
+h1{margin:0;color:var(--deep);letter-spacing:2px;font-family:Georgia,serif;font-size:27px}
+header p{margin:7px 0 0;font-size:11px;letter-spacing:1.5px;color:#9a637c}
+main{max-width:760px;margin:auto;padding:16px 14px 92px}
+nav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 18px}
+nav button,.btn{border:0;border-radius:13px;padding:12px 8px;background:var(--pink2);color:var(--deep);font-weight:650;font-size:13px}
+nav button.active,.btn.primary{background:var(--deep);color:white}
+h2{font: bold 21px Georgia,serif;color:var(--deep);margin:10px 0 12px}
+h3{font-size:15px;margin:0 0 8px;color:var(--deep)}
+.panel{background:white;border:1px solid var(--line);border-radius:18px;padding:15px;margin:12px 0;box-shadow:0 4px 16px #8746630b}
+label{display:block;font-size:12px;color:var(--muted);margin:9px 0 5px}
+input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:11px;background:#fffafd;color:var(--ink);font:inherit}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+button{cursor:pointer}
+.btn{margin-top:12px;width:100%;padding:13px}
+.small{font-size:12px;color:var(--muted);line-height:1.5}
+.items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.item{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:white}
+.item img{width:100%;height:150px;object-fit:cover;background:#f9eaf0}
+.item .meta{padding:9px}
+.item strong{font-size:13px;display:block}
+.item small{font-size:11px;color:var(--muted)}
+.item button{margin:7px 9px 9px;border:0;background:#fae8ef;color:var(--deep);padding:7px 10px;border-radius:9px}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:#fffafd;border-radius:20px;padding:7px 10px;font-size:12px}
+.empty{text-align:center;padding:24px;color:var(--muted);background:#fff;border:1px dashed var(--line);border-radius:15px}
+.preview{width:100%;max-height:340px;object-fit:contain;border-radius:13px;background:#fff3f7}
+.hidden{display:none!important}
+footer{text-align:center;font-size:10px;color:#b18a9d;padding:20px}
+</style>
+</head>
+<body>
+<header><h1>MY CLOSET AI</h1><p>YOUR STYLE · YOUR WORLD ♡</p></header>
+<main>
+<nav id="nav">
+<button class="active" data-tab="closet">Mi armario</button>
+<button data-tab="stylist">Estilista IA</button>
+<button data-tab="tryon">Probador</button>
+</nav>
+
+<section id="closet">
+<h2>Mi armario ♡</h2>
+<div class="panel">
+<h3>Agregar una prenda o accesorio</h3>
+<label>Nombre</label><input id="name" placeholder="Ej. Blusa blanca">
+<div class="row">
+<div><label>Categoría</label><select id="category">
+<option>Blusas y tops</option><option>Pantalones</option><option>Faldas</option><option>Vestidos</option><option>Chaquetas</option><option>Zapatos</option><option>Bolsos y carteras</option><option>Joyas</option><option>Gafas</option><option>Accesorios para el cabello</option><option>Cinturones y pañuelos</option><option>Otros accesorios</option>
+</select></div>
+<div><label>Color</label><select id="color"><option>Rosa</option><option>Blanco</option><option>Negro</option><option>Beige</option><option>Azul</option><option>Rojo</option><option>Verde</option><option>Multicolor</option><option>Otro</option></select></div>
+</div>
+<label>Fotografía de la prenda</label><input id="photo" type="file" accept="image/*">
+<button class="btn primary" id="add">＋ Guardar en mi armario</button>
+<p class="small">Tus prendas se guardan en este dispositivo. Evita subir fotos privadas o información personal.</p>
+</div>
+<div class="row" style="align-items:center"><h3 id="count">Mi colección (0)</h3><select id="filter" aria-label="Filtrar categoría"><option value="">Todas las categorías</option></select></div>
+<div id="items" class="items"></div>
+</section>
+
+<section id="stylist" class="hidden">
+<h2>Tu estilista personal ✨</h2>
+<div class="panel">
+<p class="small">Cuéntame qué plan tienes y te ayudaré a combinar prendas de tu armario. Las recomendaciones son sugerencias de estilo generadas con las prendas guardadas aquí.</p>
+<label>Ocasión</label><select id="occasion"><option>Cualquier ocasión</option><option>Salida casual</option><option>Escuela</option><option>Fiesta o celebración</option><option>Cita o salida especial</option><option>Evento elegante</option><option>Día relajado</option></select>
+<label>Estilo que quieres explorar</label><select id="style"><option>Todos los estilos</option><option>Elegante</option><option>Casual</option><option>Coquette y romántico</option><option>Moderno y juvenil</option><option>Urbano</option><option>Minimalista</option></select>
+<button class="btn primary" id="recommend">✨ Recomendarme un look</button>
+<div id="recommendation" class="panel hidden"></div>
+</div>
+</section>
+
+<section id="tryon" class="hidden">
+<h2>Probador virtual ♡</h2>
+<div class="panel">
+<p class="small">Selecciona una fotografía tuya y las prendas que quieras combinar. Esta primera versión permite preparar tu conjunto; todavía no genera una prueba virtual real con IA.</p>
+<label>Tu fotografía</label><input id="selfie" type="file" accept="image/*">
+<img id="selfiePreview" class="preview hidden" alt="Vista previa de tu fotografía">
+<label>Elige prendas de tu armario</label><div id="pickItems" class="items"></div>
+<button class="btn primary" id="makeLook">Ver mi selección</button>
+<div id="lookResult" class="panel hidden"></div>
+<p class="small">La fotografía se procesa localmente en esta versión. La función de superposición realista requiere conectar un proveedor de prueba virtual con IA y revisar sus condiciones de privacidad.</p>
+</div>
+</section>
+<footer>MY CLOSET AI · Hecho con cariño ♡</footer>
+</main>
+<script>
+const KEY='myClosetAI_v1';let clothes=JSON.parse(localStorage.getItem(KEY)||'[]');let selected=new Set();
+const $=id=>document.getElementById(id);
+const categories=[...new Set([...document.querySelectorAll('#category option')].map(o=>o.value))];
+categories.forEach(c=>$('filter').add(new Option(c,c)));
+function save(){localStorage.setItem(KEY,JSON.stringify(clothes));render()}
+function render(){
+ $('count').textContent=`Mi colección (${clothes.length})`;
+ const f=$('filter').value;const list=clothes.map((x,i)=>({...x,i})).filter(x=>!f||x.category===f);
+ $('items').innerHTML=list.length?list.map(x=>`<article class="item">${x.photo?`<img src="${x.photo}" alt="">`:`<div class="empty">♡</div>`}<div class="meta"><strong>${esc(x.name)}</strong><small>${esc(x.category)} · ${esc(x.color)}</small></div><button data-del="${x.i}">Eliminar</button></article>`).join(''):'<div class="empty" style="grid-column:1/-1">Tu armario está esperando tus primeras prendas. ♡</div>';
+ $('pickItems').innerHTML=clothes.length?clothes.map((x,i)=>`<label class="item" style="padding:9px;display:block"><input type="checkbox" data-pick="${i}" ${selected.has(i)?'checked':''} style="width:auto">${x.photo?`<img src="${x.photo}" style="width:100%;height:90px;object-fit:cover">`:''}<strong>${esc(x.name)}</strong><small>${esc(x.category)}</small></label>`).join(''):'<div class="empty" style="grid-column:1/-1">Agrega prendas en Mi armario para seleccionarlas aquí.</div>';
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+$('add').onclick=async()=>{
+ const name=$('name').value.trim();if(!name){alert('Escribe el nombre de la prenda.');return}
+ const file=$('photo').files[0];let photo='';
+ if(file){if(file.size>2*1024*1024){alert('Elige una imagen de menos de 2 MB para esta versión.');return}photo=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
+ clothes.push({name,category:$('category').value,color:$('color').value,photo});$('name').value='';$('photo').value='';save();
+};
+$('items').onclick=e=>{const b=e.target.closest('[data-del]');if(b){clothes.splice(+b.dataset.del,1);selected.clear();save()}};
+$('filter').onchange=render;
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x===b));['closet','stylist','tryon'].forEach(id=>$(id).classList.toggle('hidden',id!==b.dataset.tab))});
+$('pickItems').onchange=e=>{const i=Number(e.target.dataset.pick);if(Number.isInteger(i)){e.target.checked?selected.add(i):selected.delete(i)}};
+$('recommend').onclick=()=>{
+ const tops=clothes.filter(x=>/blusas|tops|vestidos|chaquetas/i.test(x.category));
+ const bottoms=clothes.filter(x=>/pantalones|faldas/i.test(x.category));
+ const shoes=clothes.filter(x=>/zapatos/i.test(x.category));
+ const extras=clothes.filter(x=>/bolsos|joyas|gafas|accesorios|cinturones/i.test(x.category));
+ if(!clothes.length){$('recommendation').classList.remove('hidden');$('recommendation').textContent='Primero agrega algunas prendas a tu armario para recibir recomendaciones.';return}
+ const pick=a=>a.length?a[Math.floor(Math.random()*a.length)]:null;
+ const chosen=[pick(tops),pick(bottoms),pick(shoes),pick(extras)].filter(Boolean);
+ const occasion=$('occasion').value,style=$('style').value;
+ $('recommendation').classList.remove('hidden');
+ $('recommendation').innerHTML=`<h3>Tu propuesta de look ♡</h3><p><b>Ocasión:</b> ${esc(occasion)}<br><b>Estilo:</b> ${esc(style)}</p>${chosen.map(x=>`<p>♡ <b>${esc(x.category)}:</b> ${esc(x.name)} (${esc(x.color)})</p>`).join('')}<p class="small">Consejo: prueba el conjunto frente al espejo y ajusta los accesorios según lo que te haga sentir cómoda. Puedes generar otra propuesta.</p>`;
+};
+$('selfie').onchange=()=>{const f=$('selfie').files[0];if(!f)return;if(f.size>5*1024*1024){alert('Elige una foto de menos de 5 MB.');return}const r=new FileReader();r.onload=()=>{$('selfiePreview').src=r.result;$('selfiePreview').classList.remove('hidden')};r.readAsDataURL(f)};
+$('makeLook').onclick=()=>{
+ const chosen=[...selected].map(i=>clothes[i]).filter(Boolean);
+ $('lookResult').classList.remove('hidden');
+ $('lookResult').innerHTML=chosen.length?`<h3>Tu conjunto seleccionado ♡</h3>${chosen.map(x=>`<p>${esc(x.name)} · ${esc(x.category)} · ${esc(x.color)}</p>`).join('')}<p class="small">Esta es tu selección de prendas. La generación de una imagen tuya vistiendo el conjunto se habilitará al integrar el servicio de prueba virtual con IA.</p>`:'Selecciona al menos una prenda para preparar tu conjunto.';
+};
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+render();
+</script>
+</body></html>
