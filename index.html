@@ -28,11 +28,11 @@ button{cursor:pointer}
 .small{font-size:12px;color:var(--muted);line-height:1.5}
 .items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .item{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:white}
-.item img{width:100%;height:150px;object-fit:cover;background:#f9eaf0}
+.item img{width:100%;height:150px;object-fit:contain;padding:10px;background-color:#fff;background-image:linear-gradient(45deg,#f7edf1 25%,transparent 25%),linear-gradient(-45deg,#f7edf1 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#f7edf1 75%),linear-gradient(-45deg,transparent 75%,#f7edf1 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0}
 .item .meta{padding:9px}
 .item strong{font-size:13px;display:block}
 .item small{font-size:11px;color:var(--muted)}
-.item button{margin:7px 9px 9px;border:0;background:#fae8ef;color:var(--deep);padding:7px 10px;border-radius:9px}
+.item button{margin:7px 5px 9px 9px;border:0;background:#fae8ef;color:var(--deep);padding:7px 10px;border-radius:9px;font-size:11px}.item .remove-bg{background:#f4d8e4}.status{font-size:12px;color:var(--deep);margin:8px 0;min-height:18px}
 .chips{display:flex;gap:7px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:#fffafd;border-radius:20px;padding:7px 10px;font-size:12px}
 .empty{text-align:center;padding:24px;color:var(--muted);background:#fff;border:1px dashed var(--line);border-radius:15px}
@@ -62,6 +62,8 @@ footer{text-align:center;font-size:10px;color:#b18a9d;padding:20px}
 <div><label>Color</label><select id="color"><option>Rosa</option><option>Blanco</option><option>Negro</option><option>Beige</option><option>Azul</option><option>Rojo</option><option>Verde</option><option>Multicolor</option><option>Otro</option></select></div>
 </div>
 <label>Fotografía de la prenda</label><input id="photo" type="file" accept="image/*">
+<p class="small">♡ Intentaremos quitar el fondo automáticamente para mostrar solo la prenda. La primera vez puede tardar y descargar un modelo de IA de aproximadamente 40 MB.</p>
+<div id="photoStatus" class="status" role="status" aria-live="polite"></div>
 <button class="btn primary" id="add">＋ Guardar en mi armario</button>
 <p class="small">Tus prendas se guardan en este dispositivo. Evita subir fotos privadas o información personal.</p>
 </div>
@@ -103,17 +105,45 @@ function save(){localStorage.setItem(KEY,JSON.stringify(clothes));render()}
 function render(){
  $('count').textContent=`Mi colección (${clothes.length})`;
  const f=$('filter').value;const list=clothes.map((x,i)=>({...x,i})).filter(x=>!f||x.category===f);
- $('items').innerHTML=list.length?list.map(x=>`<article class="item">${x.photo?`<img src="${x.photo}" alt="">`:`<div class="empty">♡</div>`}<div class="meta"><strong>${esc(x.name)}</strong><small>${esc(x.category)} · ${esc(x.color)}</small></div><button data-del="${x.i}">Eliminar</button></article>`).join(''):'<div class="empty" style="grid-column:1/-1">Tu armario está esperando tus primeras prendas. ♡</div>';
- $('pickItems').innerHTML=clothes.length?clothes.map((x,i)=>`<label class="item" style="padding:9px;display:block"><input type="checkbox" data-pick="${i}" ${selected.has(i)?'checked':''} style="width:auto">${x.photo?`<img src="${x.photo}" style="width:100%;height:90px;object-fit:cover">`:''}<strong>${esc(x.name)}</strong><small>${esc(x.category)}</small></label>`).join(''):'<div class="empty" style="grid-column:1/-1">Agrega prendas en Mi armario para seleccionarlas aquí.</div>';
+ $('items').innerHTML=list.length?list.map(x=>`<article class="item">${x.photo?`<img src="${x.photo}" alt="${esc(x.name)}">`:`<div class="empty">♡</div>`}<div class="meta"><strong>${esc(x.name)}</strong><small>${esc(x.category)} · ${esc(x.color)}</small></div>${x.photo?`<button class="remove-bg" data-bg="${x.i}">Quitar fondo</button>`:''}<button data-del="${x.i}">Eliminar</button></article>`).join(''):'<div class="empty" style="grid-column:1/-1">Tu armario está esperando tus primeras prendas. ♡</div>';
+ $('pickItems').innerHTML=clothes.length?clothes.map((x,i)=>`<label class="item" style="padding:9px;display:block"><input type="checkbox" data-pick="${i}" ${selected.has(i)?'checked':''} style="width:auto">${x.photo?`<img src="${x.photo}" style="width:100%;height:90px;object-fit:contain;background:#fff">`:''}<strong>${esc(x.name)}</strong><small>${esc(x.category)}</small></label>`).join(''):'<div class="empty" style="grid-column:1/-1">Agrega prendas en Mi armario para seleccionarlas aquí.</div>';
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+let bgRemovalModule;
+async function removeImageBackground(source){
+  bgRemovalModule ||= import('https://esm.sh/@imgly/background-removal@1.1.1?bundle');
+  const mod=await bgRemovalModule;
+  const remove=mod.default||mod.removeBackground;
+  if(typeof remove!=='function') throw new Error('No se pudo cargar la herramienta de recorte.');
+  const blob=await remove(source,{model:'small',output:{format:'image/png'}});
+  // Reduce dimensions while preserving transparency to keep the local collection manageable.
+  const bitmap=await createImageBitmap(blob);
+  const scale=Math.min(1,1000/Math.max(bitmap.width,bitmap.height));
+  const canvas=document.createElement('canvas');canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);
+  canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close?.();
+  const png=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+  if(!png) throw new Error('No se pudo preparar la imagen PNG.');
+  return await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(png)});
+}
+async function saveClothingImage(file){
+  if(file.size>2*1024*1024) throw new Error('Elige una imagen original de menos de 2 MB.');
+  $('photoStatus').textContent='Quitando el fondo con IA… La primera vez puede tardar un poco.';
+  try{return await removeImageBackground(file)}
+  catch(err){console.error(err);const keepOriginal=confirm('No se pudo quitar el fondo automáticamente. ¿Quieres guardar la foto original de todas formas?');if(!keepOriginal)throw new Error('No se guardó la prenda. Puedes intentarlo de nuevo con otra foto.');return await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
+}
 $('add').onclick=async()=>{
  const name=$('name').value.trim();if(!name){alert('Escribe el nombre de la prenda.');return}
  const file=$('photo').files[0];let photo='';
- if(file){if(file.size>2*1024*1024){alert('Elige una imagen de menos de 2 MB para esta versión.');return}photo=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
- clothes.push({name,category:$('category').value,color:$('color').value,photo});$('name').value='';$('photo').value='';save();
+ $('add').disabled=true;
+ try{
+   if(file) photo=await saveClothingImage(file);
+   clothes.push({name,category:$('category').value,color:$('color').value,photo});
+   try{save()}catch(e){clothes.pop();throw new Error('El almacenamiento del navegador está lleno. Prueba con una foto más pequeña o elimina algunas prendas.')}
+   $('name').value='';$('photo').value='';$('photoStatus').textContent='¡Prenda guardada! El fondo ya está transparente.';
+ }catch(err){alert(err.message||'No se pudo guardar la prenda.');$('photoStatus').textContent='Puedes volver a intentarlo.'}
+ finally{$('add').disabled=false}
 };
-$('items').onclick=e=>{const b=e.target.closest('[data-del]');if(b){clothes.splice(+b.dataset.del,1);selected.clear();save()}};
+$('items').onclick=async e=>{const bg=e.target.closest('[data-bg]');if(bg){const i=Number(bg.dataset.bg);if(!clothes[i]?.photo)return;bg.disabled=true;bg.textContent='Procesando…';try{clothes[i].photo=await removeImageBackground(await (await fetch(clothes[i].photo)).blob());save()}catch(err){alert('No se pudo quitar el fondo. Inténtalo con otra foto.');bg.disabled=false;bg.textContent='Quitar fondo'}return}const b=e.target.closest('[data-del]');if(b){clothes.splice(+b.dataset.del,1);selected.clear();save()}};
 $('filter').onchange=render;
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x===b));['closet','stylist','tryon'].forEach(id=>$(id).classList.toggle('hidden',id!==b.dataset.tab))});
 $('pickItems').onchange=e=>{const i=Number(e.target.dataset.pick);if(Number.isInteger(i)){e.target.checked?selected.add(i):selected.delete(i)}};
