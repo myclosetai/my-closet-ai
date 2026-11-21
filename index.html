@@ -111,11 +111,12 @@ function render(){
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 let bgRemovalModule;
 async function removeImageBackground(source){
-  bgRemovalModule ||= import('https://esm.sh/@imgly/background-removal@1.1.1?bundle');
+  bgRemovalModule ||= import('https://esm.sh/@imgly/background-removal@1.7.0?bundle');
   const mod=await bgRemovalModule;
   const remove=mod.default||mod.removeBackground;
-  if(typeof remove!=='function') throw new Error('No se pudo cargar la herramienta de recorte.');
-  const blob=await remove(source,{model:'small',output:{format:'image/png'}});
+  if(typeof remove!=='function') throw new Error('La herramienta de recorte no se pudo iniciar. Recarga la página e inténtalo otra vez.');
+  const blob=await remove(source,{model:'isnet_quint8',device:'cpu',output:{format:'image/png'}});
+  if(!(blob instanceof Blob) || !blob.size) throw new Error('La IA no devolvió una imagen. Prueba con una foto JPG o PNG más clara.');
   // Reduce dimensions while preserving transparency to keep the local collection manageable.
   const bitmap=await createImageBitmap(blob);
   const scale=Math.min(1,1000/Math.max(bitmap.width,bitmap.height));
@@ -129,7 +130,11 @@ async function saveClothingImage(file){
   if(file.size>2*1024*1024) throw new Error('Elige una imagen original de menos de 2 MB.');
   $('photoStatus').textContent='Quitando el fondo con IA… La primera vez puede tardar un poco.';
   try{return await removeImageBackground(file)}
-  catch(err){console.error(err);const keepOriginal=confirm('No se pudo quitar el fondo automáticamente. ¿Quieres guardar la foto original de todas formas?');if(!keepOriginal)throw new Error('No se guardó la prenda. Puedes intentarlo de nuevo con otra foto.');return await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
+  catch(err){console.error('Error al quitar el fondo:',err);const detail=String(err?.message||'').slice(0,180);const keepOriginal=confirm('No se pudo quitar el fondo. Puede deberse a la conexión o a la memoria del navegador.
+
+Detalle: '+detail+'
+
+¿Quieres guardar la foto original de todas formas?');if(!keepOriginal)throw new Error('No se guardó la prenda. Comprueba tu conexión y vuelve a intentarlo.');return await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
 }
 $('add').onclick=async()=>{
  const name=$('name').value.trim();if(!name){alert('Escribe el nombre de la prenda.');return}
